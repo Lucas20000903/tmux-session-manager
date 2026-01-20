@@ -69,15 +69,15 @@ source ~/.zshrc
 
 ### 모드
 
-#### Attach 모드 (📎)
+#### › Attach 모드
 기존 tmux 세션 목록을 보여주고 선택한 세션에 연결합니다.
 
-#### New 모드 (➕)
+#### + New 모드
 새 세션을 생성합니다:
 - **New Session** - 일반 tmux 세션
 - **New Claude Session** - Claude가 자동 실행되는 세션
 
-#### Manage 모드 (🗑)
+#### × Manage 모드
 세션을 삭제합니다:
 - 개별 세션 삭제
 - 전체 세션 삭제 (Delete All)
