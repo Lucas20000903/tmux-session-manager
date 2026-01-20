@@ -1,5 +1,5 @@
 #!/bin/zsh
-# ts preview script for tmux-session-manager
+# ts preview script - professional styling
 
 mode_file="$1"
 item="$2"
@@ -7,29 +7,44 @@ item="$2"
 mode=$(cat "$mode_file" 2>/dev/null)
 [[ -z "$mode" ]] && mode="attach"
 
+# Colors
+C_CYAN=$'\033[36m'
+C_GREEN=$'\033[32m'
+C_YELLOW=$'\033[33m'
+C_RED=$'\033[31m'
+C_DIM=$'\033[2m'
+C_BOLD=$'\033[1m'
+C_RESET=$'\033[0m'
+
 case "$mode" in
     attach)
-        printf "\033[36mSession Preview\033[0m\n\n"
+        printf "${C_CYAN}${C_BOLD}┌─ Session Preview ─┐${C_RESET}\n\n"
         if [[ -n "$item" && "$item" != "[No sessions]" ]]; then
-            tmux capture-pane -ep -t "$item" 2>/dev/null || printf "\033[2mNo preview\033[0m"
+            tmux capture-pane -ep -t "$item" 2>/dev/null || printf "${C_DIM}  No preview available${C_RESET}"
         else
-            printf "\033[2mSelect a session\033[0m"
+            printf "${C_DIM}  Select a session to preview${C_RESET}"
         fi
         ;;
     new)
-        printf "\033[36mCreate Session\033[0m\n\n"
-        printf "\033[32m•\033[0m New Session - Regular tmux\n"
-        printf "\033[33m•\033[0m Claude Session - Auto-launch Claude\n"
+        printf "${C_GREEN}${C_BOLD}┌─ Create Session ─┐${C_RESET}\n\n"
+        printf "  ${C_CYAN}▸${C_RESET} New Session\n"
+        printf "    ${C_DIM}Regular tmux session${C_RESET}\n\n"
+        printf "  ${C_YELLOW}▸${C_RESET} Claude Session\n"
+        printf "    ${C_DIM}Auto-launch Claude CLI${C_RESET}\n"
         ;;
     manage)
-        printf "\033[36mSession Windows\033[0m\n\n"
+        printf "${C_YELLOW}${C_BOLD}┌─ Session Info ─┐${C_RESET}\n\n"
         if [[ -n "$item" && "$item" != "[Delete All]" && "$item" != "[No sessions]" ]]; then
-            tmux list-windows -t "$item" -F "[#{window_index}] #{window_name}" 2>/dev/null || printf "\033[2mNo info\033[0m"
+            printf "  ${C_DIM}Windows:${C_RESET}\n"
+            tmux list-windows -t "$item" -F "    ${C_CYAN}▸${C_RESET} [#{window_index}] #{window_name}" 2>/dev/null || printf "    ${C_DIM}No info${C_RESET}"
+        elif [[ "$item" == "[Delete All]" ]]; then
+            printf "  ${C_RED}! Warning${C_RESET}\n\n"
+            printf "  ${C_DIM}This will delete ALL sessions${C_RESET}\n"
         else
-            printf "\033[2mSelect a session\033[0m"
+            printf "  ${C_DIM}Select a session${C_RESET}"
         fi
         ;;
     *)
-        printf "\033[31mUnknown mode: $mode\033[0m"
+        printf "${C_RED}Unknown mode: $mode${C_RESET}"
         ;;
 esac
