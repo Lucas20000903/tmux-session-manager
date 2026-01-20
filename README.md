@@ -2,7 +2,7 @@
 
 fzf 기반의 tmux 세션 관리 도구입니다. 깔끔한 UI로 세션을 빠르게 전환, 생성, 삭제할 수 있습니다.
 
-![demo](https://github.com/Lucas20000903/tmux-session-manager/raw/main/demo.gif)
+![demo](demo.gif)
 
 ## 주요 기능
 
