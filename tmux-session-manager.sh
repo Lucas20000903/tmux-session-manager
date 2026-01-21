@@ -25,9 +25,9 @@ ts() {
                 --cycle \
                 --no-clear \
                 --style full \
-                --border --padding 0,1 \
+                --border --padding 0,0 \
                 --border-label ' tmux session manager ' \
-                --border-label-pos 2 \
+                --border-label-pos 3 \
                 --input-label ' › Attach ' \
                 --list-label ' Sessions ' \
                 --preview-window=right:60% \
@@ -94,9 +94,9 @@ ts() {
                 --reverse \
                 --no-clear \
                 --style full \
-                --border --padding 0,1 \
+                --border --padding 0,10 \
                 --border-label ' Create Session ' \
-                --border-label-pos 2 \
+                --border-label-pos 3 \
                 --input-label ' + Session Name ' \
                 --preview-window=right:60% \
                 --preview-label ' Preview ' \
@@ -140,9 +140,9 @@ ts() {
                     --reverse \
                     --no-clear \
                     --style full \
-                    --border --padding 0,1 \
+                    --border --padding 0,10 \
                     --border-label ' ⚠ WARNING ' \
-                    --border-label-pos 2 \
+                    --border-label-pos 3 \
                     --input-label ' ! Confirm ' \
                     --list-label ' Choice ' \
                     --preview-window=right:60% \
@@ -169,9 +169,9 @@ ts() {
                 --reverse \
                 --no-clear \
                 --style full \
-                --border --padding 0,1 \
+                --border --padding 0,10 \
                 --border-label ' Delete Session ' \
-                --border-label-pos 2 \
+                --border-label-pos 3 \
                 --input-label ' ! Confirm ' \
                 --list-label ' Choice ' \
                 --preview-window=right:60% \

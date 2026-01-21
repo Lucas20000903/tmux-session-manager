@@ -28,11 +28,6 @@ Sleep 300ms
 Show
 
 # Start demo
-Sleep 1s
-Type "# tmux-session-manager demo"
-Enter
-Sleep 1s
-
 Type "ts"
 Enter
 Sleep 2s
@@ -72,10 +67,5 @@ Sleep 1.5s
 # Select a session
 Down
 Sleep 500ms
-Enter
-Sleep 2s
-
-# End
-Type "# Done!"
 Enter
 Sleep 2s
