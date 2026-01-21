@@ -94,7 +94,7 @@ ts() {
                 --reverse \
                 --no-clear \
                 --style full \
-                --border --padding 0,10 \
+                --border --padding 0,0 \
                 --border-label ' Create Session ' \
                 --border-label-pos 3 \
                 --input-label ' + Session Name ' \
@@ -140,7 +140,7 @@ ts() {
                     --reverse \
                     --no-clear \
                     --style full \
-                    --border --padding 0,10 \
+                    --border --padding 0,0 \
                     --border-label ' ⚠ WARNING ' \
                     --border-label-pos 3 \
                     --input-label ' ! Confirm ' \
@@ -169,7 +169,7 @@ ts() {
                 --reverse \
                 --no-clear \
                 --style full \
-                --border --padding 0,10 \
+                --border --padding 0,0 \
                 --border-label ' Delete Session ' \
                 --border-label-pos 3 \
                 --input-label ' ! Confirm ' \
