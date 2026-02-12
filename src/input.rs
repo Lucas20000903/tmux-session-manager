@@ -83,6 +83,11 @@ fn handle_normal_mode(app: &mut App, key: KeyEvent) {
             app.show_preview = !app.show_preview;
         }
 
+        // Apply tmux settings
+        KeyCode::Char('S') => {
+            app.apply_tmux_settings();
+        }
+
         // Help
         KeyCode::Char('?') => {
             app.show_help();

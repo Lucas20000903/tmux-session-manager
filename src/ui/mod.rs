@@ -406,7 +406,7 @@ fn render_status_bar(frame: &mut Frame, app: &App, area: Rect) {
 fn render_footer(frame: &mut Frame, app: &App, area: Rect) {
     let hints = match app.mode {
         Mode::Normal => {
-            "  \u{f059} ? help  \u{f14e} jk navigate  \u{f03a} l actions  \u{f064} ⏎ switch  \u{f06e} ␣ peek  \u{f067} n new  \u{f00d} K kill  \u{f0b0} / filter  q quit"
+            "  \u{f059} ? help  \u{f14e} jk navigate  \u{f03a} l actions  \u{f064} ⏎ switch  \u{f06e} ␣ peek  \u{f067} n new  \u{f00d} K kill  \u{f0b0} / filter  \u{f013} S settings  q quit"
         }
         Mode::ActionMenu => "  \u{f14e} jk navigate  ⏎/l select  h/esc back  q quit",
         Mode::Filter { .. } => "  ⏎ apply  esc cancel",

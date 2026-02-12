@@ -517,6 +517,18 @@ impl App {
         self.mode = Mode::Help;
     }
 
+    /// Apply recommended tmux settings
+    pub fn apply_tmux_settings(&mut self) {
+        match Tmux::apply_settings() {
+            Ok(_) => {
+                self.message = Some("\u{f00c} Tmux settings applied".to_string());
+            }
+            Err(e) => {
+                self.error = Some(format!("\u{f00d} Failed to apply settings: {}", e));
+            }
+        }
+    }
+
     /// Cancel current mode and return to normal
     pub fn cancel(&mut self) {
         self.pending_action = None;

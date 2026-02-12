@@ -315,6 +315,29 @@ impl Tmux {
         Ok(())
     }
 
+    /// Apply recommended tmux settings (mouse, titles, allow-rename)
+    pub fn apply_settings() -> Result<()> {
+        let settings = [
+            &["set-option", "-g", "mouse", "on"][..],
+            &["set", "-g", "set-titles", "on"],
+            &["set", "-g", "set-titles-string", "#{pane_title}"],
+            &["set", "-g", "allow-rename", "on"],
+        ];
+
+        for args in &settings {
+            let status = Command::new("tmux")
+                .args(*args)
+                .status()
+                .context("Failed to execute tmux set command")?;
+
+            if !status.success() {
+                anyhow::bail!("Failed to apply setting: tmux {}", args.join(" "));
+            }
+        }
+
+        Ok(())
+    }
+
     /// Get the name of the currently attached session
     pub fn current_session() -> Result<Option<String>> {
         let output = Command::new("tmux")

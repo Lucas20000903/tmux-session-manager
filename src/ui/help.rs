@@ -9,7 +9,7 @@ use ratatui::{
 };
 
 pub fn render_help(frame: &mut Frame) {
-    let area = centered_rect(64, 25, frame.area());
+    let area = centered_rect(64, 26, frame.area());
 
     let block = Block::default()
         .title(" \u{f059} Help ")
@@ -36,6 +36,7 @@ pub fn render_help(frame: &mut Frame) {
         Line::raw("  r           Rename session"),
         Line::raw("  /           Filter sessions"),
         Line::raw("  R           Refresh list"),
+        Line::raw("  S           Apply tmux settings"),
         Line::raw(""),
         Line::from(Span::styled(
             "\u{f03a} Action Menu",
