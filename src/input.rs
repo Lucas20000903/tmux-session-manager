@@ -38,9 +38,14 @@ fn handle_normal_mode(app: &mut App, key: KeyEvent) {
             app.enter_action_menu();
         }
 
-        // Switch to session (quick action)
+        // Switch to session and quit
         KeyCode::Enter => {
             app.switch_to_selected();
+        }
+
+        // Switch to session but keep tsm open
+        KeyCode::Char(' ') => {
+            app.switch_to_selected_stay();
         }
 
         // New session

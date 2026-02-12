@@ -150,9 +150,9 @@ impl App {
     // Session selection and navigation
     // =========================================================================
 
-    /// Get filtered sessions based on current filter
+    /// Get filtered sessions based on current filter, sorted by creation time
     pub fn filtered_sessions(&self) -> Vec<&Session> {
-        if self.filter.is_empty() {
+        let mut result: Vec<&Session> = if self.filter.is_empty() {
             self.sessions.iter().collect()
         } else {
             let filter_lower = self.filter.to_lowercase();
@@ -163,7 +163,9 @@ impl App {
                         || s.display_path().to_lowercase().contains(&filter_lower)
                 })
                 .collect()
-        }
+        };
+        result.sort_by_key(|s| s.created);
+        result
     }
 
     /// Get filtered sessions grouped by working directory.
@@ -220,7 +222,7 @@ impl App {
         }
     }
 
-    /// Switch to the selected session
+    /// Switch to the selected session and quit
     pub fn switch_to_selected(&mut self) {
         self.clear_messages();
         if let Some(session) = self.selected_session() {
@@ -228,6 +230,22 @@ impl App {
             match Tmux::switch_to_session(&name) {
                 Ok(_) => {
                     self.should_quit = true;
+                }
+                Err(e) => {
+                    self.error = Some(format!("Failed to switch: {}", e));
+                }
+            }
+        }
+    }
+
+    /// Switch to the selected session but keep tsm open
+    pub fn switch_to_selected_stay(&mut self) {
+        self.clear_messages();
+        if let Some(session) = self.selected_session() {
+            let name = session.name.clone();
+            match Tmux::switch_to_session(&name) {
+                Ok(_) => {
+                    self.message = Some(format!("Switched to '{}'", name));
                 }
                 Err(e) => {
                     self.error = Some(format!("Failed to switch: {}", e));
