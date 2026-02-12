@@ -20,25 +20,45 @@ use crate::session::ClaudeCodeStatus;
 pub fn render(frame: &mut Frame, app: &mut App) {
     let area = frame.area();
 
-    // Calculate preview height (roughly 50% of available space, min 5, max 30 lines)
-    let available_height = area.height.saturating_sub(4);
-    let preview_height = (available_height * 50 / 100).clamp(5, 30);
+    // Auto-hide preview on small terminals
+    let show_preview = app.show_preview && area.height >= 30;
 
-    // Main layout: header, session list, preview, status bar, footer
-    let layout = Layout::vertical([
-        Constraint::Length(1),              // Header
-        Constraint::Min(3),                 // Session list
-        Constraint::Length(preview_height), // Preview pane
-        Constraint::Length(1),              // Status bar
-        Constraint::Length(1),              // Footer
-    ])
-    .split(area);
+    let status_bar_area;
 
-    render_header(frame, app, layout[0]);
-    render_session_list(frame, app, layout[1]);
-    render_preview(frame, app, layout[2]);
-    render_status_bar(frame, app, layout[3]);
-    render_footer(frame, app, layout[4]);
+    if show_preview {
+        let available_height = area.height.saturating_sub(4);
+        let preview_height = (available_height * 50 / 100).clamp(5, 30);
+
+        let layout = Layout::vertical([
+            Constraint::Length(1),              // Header
+            Constraint::Min(3),                 // Session list
+            Constraint::Length(preview_height), // Preview pane
+            Constraint::Length(1),              // Status bar
+            Constraint::Length(1),              // Footer
+        ])
+        .split(area);
+
+        render_header(frame, app, layout[0]);
+        render_session_list(frame, app, layout[1]);
+        render_preview(frame, app, layout[2]);
+        render_status_bar(frame, app, layout[3]);
+        render_footer(frame, app, layout[4]);
+        status_bar_area = layout[3];
+    } else {
+        let layout = Layout::vertical([
+            Constraint::Length(1), // Header
+            Constraint::Min(3),   // Session list
+            Constraint::Length(1), // Status bar
+            Constraint::Length(1), // Footer
+        ])
+        .split(area);
+
+        render_header(frame, app, layout[0]);
+        render_session_list(frame, app, layout[1]);
+        render_status_bar(frame, app, layout[2]);
+        render_footer(frame, app, layout[3]);
+        status_bar_area = layout[2];
+    }
 
     // Render modal overlays
     match &app.mode {
@@ -51,6 +71,7 @@ pub fn render(frame: &mut Frame, app: &mut App) {
             field,
             path_suggestions,
             path_selected,
+            start_claude,
         } => {
             dialogs::render_new_session_dialog(
                 frame,
@@ -59,13 +80,14 @@ pub fn render(frame: &mut Frame, app: &mut App) {
                 *field,
                 path_suggestions,
                 *path_selected,
+                *start_claude,
             );
         }
         Mode::Rename { old_name, new_name } => {
             dialogs::render_rename_dialog(frame, old_name, new_name);
         }
         Mode::Filter { input } => {
-            render_filter_bar(frame, input, layout[3]);
+            render_filter_bar(frame, input, status_bar_area);
         }
         Mode::Help => {
             help::render_help(frame);
@@ -135,13 +157,12 @@ fn render_session_list(frame: &mut Frame, app: &mut App, area: Rect) {
         .max(10);
 
     let groups = app.grouped_sessions();
-    let multiple_groups = groups.len() > 1;
 
     let mut items: Vec<ListItem> = Vec::new();
 
     for (group_path, sessions) in &groups {
         // Render group header if there are multiple groups
-        if multiple_groups {
+        {
             let header_line = Line::from(vec![
                 Span::styled(" ─ ", Style::default().fg(Color::DarkGray)),
                 Span::styled(group_path, Style::default().fg(Color::Cyan)),
@@ -185,7 +206,7 @@ fn render_session_list(frame: &mut Frame, app: &mut App, area: Rect) {
             };
 
             // Order: name / status / pane_title / path
-            let indent = if multiple_groups { "   " } else { "" };
+            let indent = "   ";
             let mut line_spans = vec![
                 Span::raw(format!("{} {} ", indent, marker)),
                 Span::styled(
@@ -215,19 +236,7 @@ fn render_session_list(frame: &mut Frame, app: &mut App, area: Rect) {
                 ));
             }
 
-            // Path (only if not grouped, since group header already shows it)
-            if !multiple_groups {
-                let path_color = if is_selected {
-                    Color::White
-                } else {
-                    Color::DarkGray
-                };
-                line_spans.push(Span::raw("  "));
-                line_spans.push(Span::styled(
-                    session.display_path(),
-                    Style::default().fg(path_color),
-                ));
-            }
+            // Path is shown in group header, not repeated here
 
             let line = Line::from(line_spans);
 
@@ -401,7 +410,7 @@ fn render_status_bar(frame: &mut Frame, app: &App, area: Rect) {
 fn render_footer(frame: &mut Frame, app: &App, area: Rect) {
     let hints = match app.mode {
         Mode::Normal => {
-            "  ? help  jk navigate  l actions  ⏎ switch  n new  K kill  R reload  / filter  q quit"
+            "  ? help  jk navigate  l actions  ⏎ switch  n new  K kill  p preview  R reload  / filter  q quit"
         }
         Mode::ActionMenu => "  jk navigate  ⏎/l select  h/esc back  q quit",
         Mode::Filter { .. } => "  ⏎ apply  esc cancel",

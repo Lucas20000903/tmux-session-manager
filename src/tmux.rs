@@ -156,7 +156,7 @@ impl Tmux {
         // First: check each pane's process
         for pane in panes {
             if Self::is_claude_process(pane) {
-                let status = Self::capture_pane(&pane.id, 15, true)
+                let status = Self::capture_pane(&pane.id, 4, true)
                     .map(|content| detect_status(&content))
                     .unwrap_or(ClaudeCodeStatus::Unknown);
 
@@ -172,7 +172,7 @@ impl Tmux {
         // Fallback: session name starts with "claude" (e.g. claude_284B7F7A)
         if session_name.starts_with("claude") {
             if let Some(pane) = panes.first() {
-                let status = Self::capture_pane(&pane.id, 15, true)
+                let status = Self::capture_pane(&pane.id, 4, true)
                     .map(|content| detect_status(&content))
                     .unwrap_or(ClaudeCodeStatus::Unknown);
 

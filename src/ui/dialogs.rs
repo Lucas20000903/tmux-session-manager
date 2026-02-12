@@ -72,19 +72,30 @@ pub fn render_new_session_dialog(
     field: NewSessionField,
     path_suggestions: &[String],
     path_selected: Option<usize>,
+    start_claude: bool,
 ) {
     // Calculate dialog height based on suggestions shown
+    let max_visible = 5;
     let suggestions_to_show = if field == NewSessionField::Path && !path_suggestions.is_empty() {
-        path_suggestions.len().min(5)
+        path_suggestions.len().min(max_visible)
     } else {
         0
     };
     let suggestion_extra = if suggestions_to_show > 0 {
-        2 + if path_suggestions.len() > 5 { 1 } else { 0 }
+        let total = path_suggestions.len();
+        let start = if let Some(sel) = path_selected {
+            if sel >= max_visible { sel - max_visible + 1 } else { 0 }
+        } else {
+            0
+        };
+        let end = (start + max_visible).min(total);
+        let has_above = start > 0;
+        let has_below = end < total;
+        2 + if has_above { 1 } else { 0 } + if has_below { 1 } else { 0 }
     } else {
         0
     };
-    let dialog_height = 8 + suggestions_to_show as u16 + suggestion_extra as u16;
+    let dialog_height = 10 + suggestions_to_show as u16 + suggestion_extra as u16;
 
     let area = centered_rect(60, dialog_height, frame.area());
 
@@ -110,6 +121,60 @@ pub fn render_new_session_dialog(
     };
 
     let mut lines = Vec::new();
+
+    // Start with field
+    let start_label_style = if field == NewSessionField::StartWith {
+        Style::default()
+            .fg(Color::Yellow)
+            .add_modifier(Modifier::BOLD)
+    } else {
+        Style::default()
+    };
+
+    let (claude_style, shell_style) = if field == NewSessionField::StartWith {
+        if start_claude {
+            (
+                Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
+                Style::default().fg(Color::DarkGray),
+            )
+        } else {
+            (
+                Style::default().fg(Color::DarkGray),
+                Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
+            )
+        }
+    } else {
+        if start_claude {
+            (
+                Style::default().fg(Color::White),
+                Style::default().fg(Color::DarkGray),
+            )
+        } else {
+            (
+                Style::default().fg(Color::DarkGray),
+                Style::default().fg(Color::White),
+            )
+        }
+    };
+
+    lines.push(Line::from(vec![
+        Span::styled("Start: ", start_label_style),
+        Span::styled("◀ ", if field == NewSessionField::StartWith {
+            Style::default().fg(Color::DarkGray)
+        } else {
+            Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM)
+        }),
+        Span::styled(if start_claude { "[Claude]" } else { " Claude " }, claude_style),
+        Span::raw("  "),
+        Span::styled(if !start_claude { "[Shell]" } else { " Shell " }, shell_style),
+        Span::styled(" ▶", if field == NewSessionField::StartWith {
+            Style::default().fg(Color::DarkGray)
+        } else {
+            Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM)
+        }),
+    ]));
+
+    lines.push(Line::raw(""));
 
     // Name field
     lines.push(Line::from(vec![
@@ -158,7 +223,30 @@ pub fn render_new_session_dialog(
             Style::default().fg(Color::DarkGray),
         ));
 
-        for (i, suggestion) in path_suggestions.iter().take(5).enumerate() {
+        let max_visible = 5;
+        let total = path_suggestions.len();
+
+        // Calculate visible window based on selection
+        let start = if let Some(sel) = path_selected {
+            if sel >= max_visible {
+                sel - max_visible + 1
+            } else {
+                0
+            }
+        } else {
+            0
+        };
+        let end = (start + max_visible).min(total);
+
+        if start > 0 {
+            lines.push(Line::styled(
+                format!("      ... {} more above", start),
+                Style::default().fg(Color::DarkGray),
+            ));
+        }
+
+        for i in start..end {
+            let suggestion = &path_suggestions[i];
             let is_selected = path_selected == Some(i);
             let prefix = if is_selected { "    > " } else { "      " };
             let style = if is_selected {
@@ -171,9 +259,9 @@ pub fn render_new_session_dialog(
             lines.push(Line::styled(format!("{}{}", prefix, suggestion), style));
         }
 
-        if path_suggestions.len() > 5 {
+        if end < total {
             lines.push(Line::styled(
-                format!("      ... and {} more", path_suggestions.len() - 5),
+                format!("      ... {} more below", total - end),
                 Style::default().fg(Color::DarkGray),
             ));
         }
@@ -186,7 +274,7 @@ pub fn render_new_session_dialog(
 
     lines.push(Line::raw(""));
     lines.push(Line::styled(
-        "Tab switch  ↑↓ select  → accept  Enter create  Esc cancel",
+        "Tab switch  ←→ toggle  ↑↓ select  Enter create  Esc cancel",
         Style::default().fg(Color::DarkGray),
     ));
 

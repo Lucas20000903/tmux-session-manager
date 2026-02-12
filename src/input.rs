@@ -73,6 +73,11 @@ fn handle_normal_mode(app: &mut App, key: KeyEvent) {
             app.refresh();
         }
 
+        // Toggle preview
+        KeyCode::Char('p') => {
+            app.show_preview = !app.show_preview;
+        }
+
         // Help
         KeyCode::Char('?') => {
             app.show_help();
@@ -159,13 +164,23 @@ fn handle_new_session_mode(app: &mut App, key: KeyEvent) {
         KeyCode::Tab => {
             if let Mode::NewSession { ref mut field, .. } = app.mode {
                 *field = match field {
+                    NewSessionField::StartWith => NewSessionField::Name,
                     NewSessionField::Name => NewSessionField::Path,
+                    NewSessionField::Path => NewSessionField::StartWith,
+                };
+            }
+        }
+        KeyCode::BackTab => {
+            if let Mode::NewSession { ref mut field, .. } = app.mode {
+                *field = match field {
+                    NewSessionField::StartWith => NewSessionField::Path,
+                    NewSessionField::Name => NewSessionField::StartWith,
                     NewSessionField::Path => NewSessionField::Name,
                 };
             }
         }
         KeyCode::Enter => {
-            app.confirm_new_session(true);
+            app.confirm_new_session();
         }
         KeyCode::Up if current_field == NewSessionField::Path => {
             app.select_prev_new_session_path();
@@ -175,6 +190,17 @@ fn handle_new_session_mode(app: &mut App, key: KeyEvent) {
         }
         KeyCode::Right if current_field == NewSessionField::Path => {
             app.accept_new_session_path_completion();
+        }
+        KeyCode::Left | KeyCode::Right if current_field == NewSessionField::StartWith => {
+            if let Mode::NewSession {
+                ref mut start_claude,
+                ref mut name,
+                ..
+            } = app.mode
+            {
+                *start_claude = !*start_claude;
+                *name = App::generate_session_name(*start_claude);
+            }
         }
         KeyCode::Backspace => {
             if let Mode::NewSession {
@@ -193,6 +219,7 @@ fn handle_new_session_mode(app: &mut App, key: KeyEvent) {
                         path.pop();
                         *path_selected = None;
                     }
+                    NewSessionField::StartWith => {}
                 }
             }
             if current_field == NewSessionField::Path {
@@ -218,6 +245,7 @@ fn handle_new_session_mode(app: &mut App, key: KeyEvent) {
                         path.push(c);
                         *path_selected = None;
                     }
+                    NewSessionField::StartWith => {}
                 }
             }
             if current_field == NewSessionField::Path {

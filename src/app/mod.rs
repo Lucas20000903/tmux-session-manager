@@ -41,6 +41,8 @@ pub struct App {
     pub pending_action: Option<SessionAction>,
     /// Scroll state for the session list
     pub scroll_state: ScrollState,
+    /// Whether to show the preview pane
+    pub show_preview: bool,
 }
 
 impl App {
@@ -67,6 +69,7 @@ impl App {
             selected_action: 0,
             pending_action: None,
             scroll_state: ScrollState::new(),
+            show_preview: true,
         };
 
         app.update_preview();
@@ -187,21 +190,33 @@ impl App {
         filtered.get(self.selected).copied()
     }
 
-    /// Move selection up
+    /// Get the visual order of flat indices from grouped sessions
+    fn visual_order(&self) -> Vec<usize> {
+        self.grouped_sessions()
+            .into_iter()
+            .flat_map(|(_, sessions)| sessions.into_iter().map(|(i, _)| i))
+            .collect()
+    }
+
+    /// Move selection up (in visual/grouped order)
     pub fn select_prev(&mut self) {
-        let count = self.filtered_sessions().len();
-        if count > 0 && self.selected > 0 {
-            self.selected -= 1;
-            self.update_preview();
+        let order = self.visual_order();
+        if let Some(pos) = order.iter().position(|&i| i == self.selected) {
+            if pos > 0 {
+                self.selected = order[pos - 1];
+                self.update_preview();
+            }
         }
     }
 
-    /// Move selection down
+    /// Move selection down (in visual/grouped order)
     pub fn select_next(&mut self) {
-        let count = self.filtered_sessions().len();
-        if count > 0 && self.selected < count - 1 {
-            self.selected += 1;
-            self.update_preview();
+        let order = self.visual_order();
+        if let Some(pos) = order.iter().position(|&i| i == self.selected) {
+            if pos < order.len() - 1 {
+                self.selected = order[pos + 1];
+                self.update_preview();
+            }
         }
     }
 
@@ -384,15 +399,15 @@ impl App {
     // Dialog flows: New Session
     // =========================================================================
 
-    /// Generate a default session name like claude_A1B2C3D4
-    fn generate_session_name() -> String {
+    /// Generate a default session name like claude_A1B2C3D4 or shell_A1B2C3D4
+    pub fn generate_session_name(start_claude: bool) -> String {
         use std::time::{SystemTime, UNIX_EPOCH};
         let seed = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .map(|d| d.as_nanos())
             .unwrap_or(0);
-        // Use nanoseconds as a simple unique source, take 8 hex chars
-        format!("claude_{:08X}", (seed & 0xFFFFFFFF) as u32)
+        let prefix = if start_claude { "claude" } else { "shell" };
+        format!("{}_{:08X}", prefix, (seed & 0xFFFFFFFF) as u32)
     }
 
     /// Start the new session flow, defaulting to the selected session's directory
@@ -410,18 +425,22 @@ impl App {
         let completion = crate::completion::complete_path(&default_path);
 
         self.mode = Mode::NewSession {
-            name: Self::generate_session_name(),
+            name: Self::generate_session_name(true),
             path: default_path,
-            field: NewSessionField::Name,
+            field: NewSessionField::StartWith,
             path_suggestions: completion.suggestions,
             path_selected: None,
+            start_claude: true,
         };
     }
 
     /// Create the new session
-    pub fn confirm_new_session(&mut self, start_claude: bool) {
+    pub fn confirm_new_session(&mut self) {
         if let Mode::NewSession {
-            ref name, ref path, ..
+            ref name,
+            ref path,
+            start_claude,
+            ..
         } = self.mode
         {
             if name.is_empty() {
@@ -609,10 +628,6 @@ impl App {
     /// Count the number of group headers shown before a given session index.
     fn group_headers_before(&self, session_index: usize) -> usize {
         let groups = self.grouped_sessions();
-        if groups.len() <= 1 {
-            return 0; // No headers when single group
-        }
-
         let mut headers = 0;
         for (_, sessions) in &groups {
             if let Some(&(first_idx, _)) = sessions.first() {
@@ -627,8 +642,7 @@ impl App {
 
     /// Total number of group headers in the list
     fn group_header_count(&self) -> usize {
-        let groups = self.grouped_sessions();
-        if groups.len() <= 1 { 0 } else { groups.len() }
+        self.grouped_sessions().len()
     }
 
     /// Compute the flat list index for the current selection.

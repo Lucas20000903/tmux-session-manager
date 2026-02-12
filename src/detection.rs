@@ -1,19 +1,42 @@
 use crate::session::ClaudeCodeStatus;
 
-/// Detect Claude Code status from pane content.
+/// Strip ANSI escape sequences from text
+fn strip_ansi(s: &str) -> String {
+    let mut result = String::with_capacity(s.len());
+    let mut chars = s.chars().peekable();
+    while let Some(c) = chars.next() {
+        if c == '\x1b' {
+            // Skip CSI sequences: ESC [ ... final_byte
+            if chars.peek() == Some(&'[') {
+                chars.next();
+                while let Some(&next) = chars.peek() {
+                    chars.next();
+                    if next.is_ascii_alphabetic() || next == 'm' {
+                        break;
+                    }
+                }
+            }
+        } else {
+            result.push(c);
+        }
+    }
+    result
+}
+
 pub fn detect_status(content: &str) -> ClaudeCodeStatus {
-    // Step 1: Detect input field by its visual structure
+    let content = &strip_ansi(content);
+
+    if content.contains("Enter to select")
+        || content.contains("↑/↓ to navigate")
+        || content.contains("Esc to cancel")
+    {
+        return ClaudeCodeStatus::WaitingInput;
+    }
     if has_input_field(content) {
-        // Step 2: Check if interruptable
-        if content.contains("ctrl+c") && content.contains("to interrupt") {
+        if content.contains("to interrupt") {
             return ClaudeCodeStatus::Working;
         }
         return ClaudeCodeStatus::Idle;
-    }
-
-    // No input field - check for permission prompt
-    if content.contains("[y/n]") || content.contains("[Y/n]") {
-        return ClaudeCodeStatus::WaitingInput;
     }
 
     ClaudeCodeStatus::Unknown
@@ -58,9 +81,33 @@ mod tests {
     }
 
     #[test]
-    fn test_waiting_input() {
-        let content = "Delete files? [y/n]";
+    fn test_waiting_input_enter_to_select() {
+        let content = "Enter to select";
         assert_eq!(detect_status(content), ClaudeCodeStatus::WaitingInput);
+    }
+
+    #[test]
+    fn test_waiting_input_navigate() {
+        let content = "↑/↓ to navigate";
+        assert_eq!(detect_status(content), ClaudeCodeStatus::WaitingInput);
+    }
+
+    #[test]
+    fn test_waiting_input_permission_prompt() {
+        let content = "Do you want to proceed?\n  1. Yes\n❯ 2. No\n\nEsc to cancel";
+        assert_eq!(detect_status(content), ClaudeCodeStatus::WaitingInput);
+    }
+
+    #[test]
+    fn test_waiting_input_with_ansi() {
+        let content = "\x1b[38;2;153;153;153mEsc\x1b[39m \x1b[38;2;153;153;153mto\x1b[39m \x1b[38;2;153;153;153mcancel\x1b[39m";
+        assert_eq!(detect_status(content), ClaudeCodeStatus::WaitingInput);
+    }
+
+    #[test]
+    fn test_working_with_ansi() {
+        let content = "\x1b[38;2;153;153;153mesc to interrupt\x1b[39m\n\x1b[38;2;177;185;249m─────\x1b[39m\n\x1b[38;2;177;185;249m❯\x1b[39m hello";
+        assert_eq!(detect_status(content), ClaudeCodeStatus::Working);
     }
 
     #[test]

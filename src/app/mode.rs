@@ -20,6 +20,8 @@ pub enum Mode {
         path_suggestions: Vec<String>,
         /// Currently selected path suggestion index
         path_selected: Option<usize>,
+        /// Whether to start Claude Code in the new session
+        start_claude: bool,
     },
     /// Renaming a session
     Rename { old_name: String, new_name: String },
@@ -59,4 +61,5 @@ impl SessionAction {
 pub enum NewSessionField {
     Name,
     Path,
+    StartWith,
 }
