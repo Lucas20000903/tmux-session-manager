@@ -134,92 +134,114 @@ fn render_session_list(frame: &mut Frame, app: &mut App, area: Rect) {
         .unwrap_or(10)
         .max(10);
 
+    let groups = app.grouped_sessions();
+    let multiple_groups = groups.len() > 1;
+
     let mut items: Vec<ListItem> = Vec::new();
 
-    for (i, session) in filtered.iter().enumerate() {
-        let is_selected = i == app.selected;
-        let is_current = app
-            .current_session
-            .as_ref()
-            .is_some_and(|c| c == &session.name);
-
-        let is_expanded = is_selected && matches!(app.mode, Mode::ActionMenu);
-        let marker = if is_selected {
-            if is_expanded {
-                "▾"
-            } else {
-                "▸"
-            }
-        } else {
-            " "
-        };
-        let status = &session.claude_code_status;
-
-        let status_color = match (status, is_selected) {
-            (ClaudeCodeStatus::Working, _) => Color::Green,
-            (ClaudeCodeStatus::WaitingInput, _) => Color::Yellow,
-            (ClaudeCodeStatus::Idle, true) => Color::White,
-            (ClaudeCodeStatus::Idle, false) => Color::DarkGray,
-            (ClaudeCodeStatus::Unknown, true) => Color::Gray,
-            (ClaudeCodeStatus::Unknown, false) => Color::DarkGray,
-        };
-
-        let path_color = if is_selected {
-            Color::White
-        } else {
-            Color::DarkGray
-        };
-
-        let name_style = if is_current {
-            Style::default().add_modifier(Modifier::BOLD)
-        } else {
-            Style::default()
-        };
-
-        let mut line_spans = vec![
-            Span::raw(format!(" {} ", marker)),
-            Span::styled(
-                format!("{:<width$}", session.name, width = max_name_len),
-                name_style,
-            ),
-            Span::raw("  "),
-            Span::styled(status.symbol(), Style::default().fg(status_color)),
-            Span::raw(" "),
-            Span::styled(
-                format!("{:<8}", status.label()),
-                Style::default().fg(status_color),
-            ),
-            Span::raw("  "),
-            Span::styled(session.display_path(), Style::default().fg(path_color)),
-        ];
-
-        // Show pane title if available
-        if !session.pane_title.is_empty() {
-            let title_color = if is_selected {
-                Color::Cyan
-            } else {
-                Color::DarkGray
-            };
-            line_spans.push(Span::raw("  "));
-            line_spans.push(Span::styled(
-                &session.pane_title,
-                Style::default().fg(title_color),
-            ));
+    for (group_path, sessions) in &groups {
+        // Render group header if there are multiple groups
+        if multiple_groups {
+            let header_line = Line::from(vec![
+                Span::styled(" ─ ", Style::default().fg(Color::DarkGray)),
+                Span::styled(group_path, Style::default().fg(Color::Cyan)),
+                Span::styled(
+                    format!(" ({})", sessions.len()),
+                    Style::default().fg(Color::DarkGray),
+                ),
+                Span::styled(" ─", Style::default().fg(Color::DarkGray)),
+            ]);
+            items.push(ListItem::new(header_line));
         }
 
-        let line = Line::from(line_spans);
+        for &(flat_idx, session) in sessions {
+            let is_selected = flat_idx == app.selected;
+            let is_current = app
+                .current_session
+                .as_ref()
+                .is_some_and(|c| c == &session.name);
 
-        let style = if is_selected {
-            Style::default().bg(Color::DarkGray)
-        } else {
-            Style::default()
-        };
+            let is_expanded = is_selected && matches!(app.mode, Mode::ActionMenu);
+            let marker = if is_selected {
+                if is_expanded { "▾" } else { "▸" }
+            } else {
+                " "
+            };
+            let status = &session.claude_code_status;
 
-        items.push(ListItem::new(line).style(style));
+            let status_color = match (status, is_selected) {
+                (ClaudeCodeStatus::Working, _) => Color::Green,
+                (ClaudeCodeStatus::WaitingInput, _) => Color::Yellow,
+                (ClaudeCodeStatus::Idle, true) => Color::White,
+                (ClaudeCodeStatus::Idle, false) => Color::DarkGray,
+                (ClaudeCodeStatus::Unknown, true) => Color::Gray,
+                (ClaudeCodeStatus::Unknown, false) => Color::DarkGray,
+            };
 
-        // Show expanded content when in action menu mode for this session
-        if is_expanded {
-            render_expanded_session_content(app, session, &mut items);
+            let name_style = if is_current {
+                Style::default().add_modifier(Modifier::BOLD)
+            } else {
+                Style::default()
+            };
+
+            // Order: name / status / pane_title / path
+            let indent = if multiple_groups { "   " } else { "" };
+            let mut line_spans = vec![
+                Span::raw(format!("{} {} ", indent, marker)),
+                Span::styled(
+                    format!("{:<width$}", session.name, width = max_name_len),
+                    name_style,
+                ),
+                Span::raw("  "),
+                Span::styled(status.symbol(), Style::default().fg(status_color)),
+                Span::raw(" "),
+                Span::styled(
+                    format!("{:<8}", status.label()),
+                    Style::default().fg(status_color),
+                ),
+            ];
+
+            // Pane title
+            if !session.pane_title.is_empty() {
+                let title_color = if is_selected {
+                    Color::Cyan
+                } else {
+                    Color::DarkGray
+                };
+                line_spans.push(Span::raw("  "));
+                line_spans.push(Span::styled(
+                    &session.pane_title,
+                    Style::default().fg(title_color),
+                ));
+            }
+
+            // Path (only if not grouped, since group header already shows it)
+            if !multiple_groups {
+                let path_color = if is_selected {
+                    Color::White
+                } else {
+                    Color::DarkGray
+                };
+                line_spans.push(Span::raw("  "));
+                line_spans.push(Span::styled(
+                    session.display_path(),
+                    Style::default().fg(path_color),
+                ));
+            }
+
+            let line = Line::from(line_spans);
+
+            let style = if is_selected {
+                Style::default().bg(Color::DarkGray)
+            } else {
+                Style::default()
+            };
+
+            items.push(ListItem::new(line).style(style));
+
+            if is_expanded {
+                render_expanded_session_content(app, session, &mut items);
+            }
         }
     }
 

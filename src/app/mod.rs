@@ -163,6 +163,24 @@ impl App {
         }
     }
 
+    /// Get filtered sessions grouped by working directory.
+    /// Returns Vec of (group_path, Vec<(flat_index, &Session)>).
+    pub fn grouped_sessions(&self) -> Vec<(String, Vec<(usize, &Session)>)> {
+        let filtered = self.filtered_sessions();
+        let mut groups: Vec<(String, Vec<(usize, &Session)>)> = Vec::new();
+
+        for (i, session) in filtered.iter().enumerate() {
+            let path = session.display_path();
+            if let Some(group) = groups.iter_mut().find(|(p, _)| p == &path) {
+                group.1.push((i, session));
+            } else {
+                groups.push((path, vec![(i, session)]));
+            }
+        }
+
+        groups
+    }
+
     /// Get the currently selected session
     pub fn selected_session(&self) -> Option<&Session> {
         let filtered = self.filtered_sessions();
@@ -377,12 +395,17 @@ impl App {
         format!("claude_{:08X}", (seed & 0xFFFFFFFF) as u32)
     }
 
-    /// Start the new session flow
+    /// Start the new session flow, defaulting to the selected session's directory
     pub fn start_new_session(&mut self) {
         self.clear_messages();
-        let default_path = std::env::current_dir()
-            .map(|p| p.to_string_lossy().to_string())
-            .unwrap_or_else(|_| "~".to_string());
+        let default_path = self
+            .selected_session()
+            .map(|s| s.display_path())
+            .unwrap_or_else(|| {
+                std::env::current_dir()
+                    .map(|p| p.to_string_lossy().to_string())
+                    .unwrap_or_else(|_| "~".to_string())
+            });
 
         let completion = crate::completion::complete_path(&default_path);
 
@@ -583,6 +606,31 @@ impl App {
     // Scroll/list computation
     // =========================================================================
 
+    /// Count the number of group headers shown before a given session index.
+    fn group_headers_before(&self, session_index: usize) -> usize {
+        let groups = self.grouped_sessions();
+        if groups.len() <= 1 {
+            return 0; // No headers when single group
+        }
+
+        let mut headers = 0;
+        for (_, sessions) in &groups {
+            if let Some(&(first_idx, _)) = sessions.first() {
+                if first_idx > session_index {
+                    break;
+                }
+                headers += 1;
+            }
+        }
+        headers
+    }
+
+    /// Total number of group headers in the list
+    fn group_header_count(&self) -> usize {
+        let groups = self.grouped_sessions();
+        if groups.len() <= 1 { 0 } else { groups.len() }
+    }
+
     /// Compute the flat list index for the current selection.
     pub fn compute_flat_list_index(&self) -> usize {
         let filtered_count = self.filtered_sessions().len();
@@ -590,25 +638,20 @@ impl App {
             return 0;
         }
 
+        let group_offset = self.group_headers_before(self.selected);
+
         match self.mode {
             Mode::ActionMenu => {
-                let mut index = self.selected;
+                let mut index = self.selected + group_offset;
 
-                // Add 1 for the selected session row itself
-                index += 1;
-
-                // Add 1 for metadata row
-                index += 1;
-
-                // Add 1 for separator
-                index += 1;
-
-                // Add selected_action to get to the highlighted action
+                index += 1; // selected session row itself
+                index += 1; // metadata row
+                index += 1; // separator
                 index += self.selected_action;
 
                 index
             }
-            _ => self.selected,
+            _ => self.selected + group_offset,
         }
     }
 
@@ -619,18 +662,20 @@ impl App {
             return 0;
         }
 
+        let group_headers = self.group_header_count();
+
         match self.mode {
             Mode::ActionMenu => {
-                let mut total = filtered_count;
+                let mut total = filtered_count + group_headers;
 
                 total += 1; // metadata row
                 total += 1; // separator
-                total += self.available_actions.len(); // action rows
+                total += self.available_actions.len();
                 total += 1; // end separator
 
                 total
             }
-            _ => filtered_count,
+            _ => filtered_count + group_headers,
         }
     }
 }
