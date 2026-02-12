@@ -8,7 +8,7 @@ use ratatui::{
     layout::{Alignment, Constraint, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span, Text},
-    widgets::{Clear, List, ListItem, Paragraph, StatefulWidget},
+    widgets::{Block, Borders, Clear, List, ListItem, Padding, Paragraph, StatefulWidget},
     Frame,
 };
 use unicode_width::UnicodeWidthStr;
@@ -18,7 +18,12 @@ use crate::session::ClaudeCodeStatus;
 
 /// Render the application UI
 pub fn render(frame: &mut Frame, app: &mut App) {
-    let area = frame.area();
+    let full_area = frame.area();
+
+    // Apply padding to the entire window
+    let area = Block::default()
+        .padding(Padding::new(1, 1, 1, 0))
+        .inner(full_area);
 
     // Auto-hide preview on small terminals
     let show_preview = app.show_preview && area.height >= 30;
@@ -107,10 +112,10 @@ fn render_header(frame: &mut Frame, app: &App, area: Rect) {
     let current = app
         .current_session
         .as_ref()
-        .map(|s| format!(" attached: {} ", s))
+        .map(|s| format!(" \u{f0c1} attached: {} ", s))
         .unwrap_or_default();
 
-    let title_prefix = "─ tsm ─";
+    let title_prefix = "─ \u{f489} tsm ─";
     let remaining_width = (area.width as usize).saturating_sub(title_prefix.len());
     let title = format!(
         "{}{:─>width$}",
@@ -164,7 +169,7 @@ fn render_session_list(frame: &mut Frame, app: &mut App, area: Rect) {
         // Render group header if there are multiple groups
         {
             let header_line = Line::from(vec![
-                Span::styled(" ─ ", Style::default().fg(Color::DarkGray)),
+                Span::styled(" \u{f07b} ", Style::default().fg(Color::Cyan)),
                 Span::styled(group_path, Style::default().fg(Color::Cyan)),
                 Span::styled(
                     format!(" ({})", sessions.len()),
@@ -184,11 +189,22 @@ fn render_session_list(frame: &mut Frame, app: &mut App, area: Rect) {
 
             let is_expanded = is_selected && matches!(app.mode, Mode::ActionMenu);
             let marker = if is_selected {
-                if is_expanded { "▾" } else { "▸" }
+                if is_expanded { "\u{f078}" } else { "\u{f054}" }
             } else {
                 " "
             };
             let status = &session.claude_code_status;
+
+            let session_icon = if session.claude_code_pane.is_some() {
+                "\u{f4f5}"
+            } else {
+                "\u{e691}"
+            };
+            let session_icon_color = if session.claude_code_pane.is_some() {
+                Color::Rgb(227, 137, 54)
+            } else {
+                Color::DarkGray
+            };
 
             let status_color = match (status, is_selected) {
                 (ClaudeCodeStatus::Working, _) => Color::Green,
@@ -206,9 +222,10 @@ fn render_session_list(frame: &mut Frame, app: &mut App, area: Rect) {
             };
 
             // Order: name / status / pane_title / path
-            let indent = "   ";
+            let indent = " ";
             let mut line_spans = vec![
-                Span::raw(format!("{} {} ", indent, marker)),
+                Span::raw(format!("{}{} ", indent, marker)),
+                Span::styled(format!("{} ", session_icon), Style::default().fg(session_icon_color)),
                 Span::styled(
                     format!("{:<width$}", session.name, width = max_name_len),
                     name_style,
@@ -277,24 +294,24 @@ fn render_expanded_session_content<'a>(
     let pane_count = session.panes.len();
 
     let meta_line = Line::from(vec![
-        Span::raw("     "),
-        Span::styled("windows: ", label_style),
+        Span::raw("   "),
+        Span::styled("\u{f2d0} windows: ", label_style),
         Span::styled(format!("{}", session.window_count), value_style),
         Span::raw("  "),
-        Span::styled("panes: ", label_style),
+        Span::styled("\u{f0db} panes: ", label_style),
         Span::styled(format!("{}", pane_count), value_style),
         Span::raw("  "),
-        Span::styled("uptime: ", label_style),
+        Span::styled("\u{f017} uptime: ", label_style),
         Span::styled(session.duration(), value_style),
         Span::raw("  "),
-        Span::styled("attached: ", label_style),
+        Span::styled("\u{f0c1} attached: ", label_style),
         Span::styled(attached_str, value_style),
     ]);
     items.push(ListItem::new(meta_line));
 
     // Separator
     let sep_line = Line::from(Span::styled(
-        "     ────────────────────────",
+        "   ────────────────────────",
         Style::default().fg(Color::DarkGray),
     ));
     items.push(ListItem::new(sep_line));
@@ -302,7 +319,7 @@ fn render_expanded_session_content<'a>(
     // Action items
     for (action_idx, action) in app.available_actions.iter().enumerate() {
         let is_action_selected = action_idx == app.selected_action;
-        let action_marker = if is_action_selected { "▸" } else { " " };
+        let action_marker = if is_action_selected { "\u{f054}" } else { " " };
         let action_style = if is_action_selected {
             Style::default().fg(Color::Yellow)
         } else {
@@ -310,7 +327,7 @@ fn render_expanded_session_content<'a>(
         };
 
         let action_line = Line::from(vec![
-            Span::raw("     "),
+            Span::raw("   "),
             Span::styled(format!("{} {}", action_marker, action.label()), action_style),
         ]);
         items.push(ListItem::new(action_line));
@@ -324,41 +341,21 @@ fn render_expanded_session_content<'a>(
 fn render_preview(frame: &mut Frame, app: &App, area: Rect) {
     frame.render_widget(Clear, area);
 
-    // Draw separator lines at top and bottom
-    let separator = "─".repeat(area.width as usize);
+    let block = Block::default()
+        .title(" \u{f06e} Preview ")
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::DarkGray))
+        .padding(Padding::new(1, 1, 0, 0));
 
-    let top_sep_area = Rect {
-        x: area.x,
-        y: area.y,
-        width: area.width,
-        height: 1,
-    };
-    let top_sep = Paragraph::new(separator.clone()).style(Style::default().fg(Color::DarkGray));
-    frame.render_widget(top_sep, top_sep_area);
-
-    let bottom_sep_area = Rect {
-        x: area.x,
-        y: area.y + area.height.saturating_sub(1),
-        width: area.width,
-        height: 1,
-    };
-    let bottom_sep = Paragraph::new(separator).style(Style::default().fg(Color::White));
-    frame.render_widget(bottom_sep, bottom_sep_area);
-
-    // Content area (between separators)
-    let content_area = Rect {
-        x: area.x,
-        y: area.y + 1,
-        width: area.width,
-        height: area.height.saturating_sub(2),
-    };
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
 
     let content = match &app.preview_content {
         Some(text) if !text.is_empty() => text,
         _ => {
-            let msg = Paragraph::new("  No preview available")
+            let msg = Paragraph::new(" \u{f06e} No preview available")
                 .style(Style::default().fg(Color::DarkGray));
-            frame.render_widget(msg, content_area);
+            frame.render_widget(msg, inner);
             return;
         }
     };
@@ -370,32 +367,31 @@ fn render_preview(frame: &mut Frame, app: &App, area: Rect) {
     };
 
     // Take only the last N lines that fit in the content area
-    let available_lines = content_area.height as usize;
+    let available_lines = inner.height as usize;
     let total_lines = styled_text.lines.len();
     let start = total_lines.saturating_sub(available_lines);
     let visible_lines: Vec<Line> = styled_text.lines.into_iter().skip(start).collect();
 
     let preview = Paragraph::new(visible_lines);
-    frame.render_widget(preview, content_area);
+    frame.render_widget(preview, inner);
 }
 
 fn render_status_bar(frame: &mut Frame, app: &App, area: Rect) {
     let (working, waiting, _idle) = app.status_counts();
     let total = app.sessions.len();
 
-    let mut parts = vec![format!("{} sessions", total)];
+    let mut parts = vec![format!("\u{f489} {} sessions", total)];
 
     if working > 0 {
-        parts.push(format!("{} working", working));
+        parts.push(format!("\u{f013} {} working", working));
     }
     if waiting > 0 {
-        parts.push(format!("{} awaiting input", waiting));
+        parts.push(format!("\u{f0a6} {} awaiting input", waiting));
     }
-
-    let status = parts.join(" │ ");
+    let status = parts.join(" \u{2502} ");
 
     let filter_info = if !app.filter.is_empty() {
-        format!(" │ filter: \"{}\"", app.filter)
+        format!(" \u{2502} \u{f0b0} filter: \"{}\"", app.filter)
     } else {
         String::new()
     };
@@ -410,13 +406,13 @@ fn render_status_bar(frame: &mut Frame, app: &App, area: Rect) {
 fn render_footer(frame: &mut Frame, app: &App, area: Rect) {
     let hints = match app.mode {
         Mode::Normal => {
-            "  ? help  jk navigate  l actions  ⏎ switch  ␣ peek  n new  K kill  p preview  / filter  q quit"
+            "  \u{f059} ? help  \u{f14e} jk navigate  \u{f03a} l actions  \u{f064} ⏎ switch  \u{f06e} ␣ peek  \u{f067} n new  \u{f00d} K kill  \u{f0b0} / filter  q quit"
         }
-        Mode::ActionMenu => "  jk navigate  ⏎/l select  h/esc back  q quit",
+        Mode::ActionMenu => "  \u{f14e} jk navigate  ⏎/l select  h/esc back  q quit",
         Mode::Filter { .. } => "  ⏎ apply  esc cancel",
-        Mode::ConfirmAction => "  y/⏎ confirm  n/esc cancel",
-        Mode::NewSession { .. } => "  ⏎ create  tab switch  ↑↓ select  → accept  esc cancel",
-        Mode::Rename { .. } => "  ⏎ confirm  esc cancel",
+        Mode::ConfirmAction => "  \u{f00c} y/⏎ confirm  \u{f00d} n/esc cancel",
+        Mode::NewSession { .. } => "  \u{f067} ⏎ create  tab switch  ↑↓ select  → accept  esc cancel",
+        Mode::Rename { .. } => "  \u{f040} ⏎ confirm  esc cancel",
         Mode::Help => "  q close",
     };
 
@@ -427,7 +423,7 @@ fn render_footer(frame: &mut Frame, app: &App, area: Rect) {
 
 fn render_filter_bar(frame: &mut Frame, input: &str, area: Rect) {
     frame.render_widget(Clear, area);
-    let text = format!("  / {}", input);
+    let text = format!("  \u{f0b0} / {}", input);
     let bar = Paragraph::new(text).style(Style::default().fg(Color::Yellow));
     frame.render_widget(bar, area);
 }

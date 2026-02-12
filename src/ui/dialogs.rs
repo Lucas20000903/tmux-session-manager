@@ -4,7 +4,7 @@ use ratatui::{
     layout::Alignment,
     style::{Color, Modifier, Style},
     text::{Line, Span, Text},
-    widgets::{Block, Borders, Clear, Paragraph, Wrap},
+    widgets::{Block, Borders, Clear, Padding, Paragraph, Wrap},
     Frame,
 };
 
@@ -25,14 +25,14 @@ pub fn render_confirm_action(frame: &mut Frame, app: &App) {
             let kills_session = matches!(action, SessionAction::Kill);
             let show_exit_warning = kills_session && is_current_session;
 
-            let dialog_height = if show_exit_warning { 7 } else { 5 };
-            let area = centered_rect(55, dialog_height, frame.area());
+            let dialog_height = if show_exit_warning { 9 } else { 7 };
+            let area = centered_rect(59, dialog_height, frame.area());
 
             let block = Block::default()
-                .title(" Confirm ")
+                .title(" \u{f071} Confirm ")
                 .borders(Borders::ALL)
-
-                .border_style(Style::default().fg(Color::Red));
+                .border_style(Style::default().fg(Color::Red))
+                .padding(Padding::new(2, 2, 1, 0));
 
             let mut lines = vec![Line::from(format!(
                 "{} '{}'?",
@@ -97,12 +97,13 @@ pub fn render_new_session_dialog(
     };
     let dialog_height = 10 + suggestions_to_show as u16 + suggestion_extra as u16;
 
-    let area = centered_rect(60, dialog_height, frame.area());
+    let area = centered_rect(64, dialog_height + 2, frame.area());
 
     let block = Block::default()
-        .title(" New Session ")
+        .title(" \u{f067} New Session ")
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(Color::Cyan));
+        .border_style(Style::default().fg(Color::Cyan))
+        .padding(Padding::new(2, 2, 1, 0));
 
     let name_style = if field == NewSessionField::Name {
         Style::default()
@@ -164,9 +165,9 @@ pub fn render_new_session_dialog(
         } else {
             Style::default().fg(Color::DarkGray).add_modifier(Modifier::DIM)
         }),
-        Span::styled(if start_claude { "[Claude]" } else { " Claude " }, claude_style),
+        Span::styled(if start_claude { "[\u{f0e4e} Claude]" } else { " \u{f0e4e} Claude " }, claude_style),
         Span::raw("  "),
-        Span::styled(if !start_claude { "[Shell]" } else { " Shell " }, shell_style),
+        Span::styled(if !start_claude { "[\u{f489} Shell]" } else { " \u{f489} Shell " }, shell_style),
         Span::styled(" ▶", if field == NewSessionField::StartWith {
             Style::default().fg(Color::DarkGray)
         } else {
@@ -288,12 +289,13 @@ pub fn render_new_session_dialog(
 }
 
 pub fn render_rename_dialog(frame: &mut Frame, old_name: &str, new_name: &str) {
-    let area = centered_rect(50, 6, frame.area());
+    let area = centered_rect(54, 8, frame.area());
 
     let block = Block::default()
-        .title(format!(" Rename '{}' ", old_name))
+        .title(format!(" \u{f040} Rename '{}' ", old_name))
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(Color::Cyan));
+        .border_style(Style::default().fg(Color::Cyan))
+        .padding(Padding::new(2, 2, 1, 0));
 
     let text = Text::from(vec![
         Line::from(vec![
