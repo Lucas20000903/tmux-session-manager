@@ -47,6 +47,8 @@ pub struct Pane {
     pub current_path: PathBuf,
     /// Process ID of the pane
     pub pid: u32,
+    /// Pane title (set by the running program)
+    pub title: String,
 }
 
 /// A tmux session that may contain a Claude Code instance
@@ -69,6 +71,8 @@ pub struct Session {
     pub claude_code_pane: Option<String>,
     /// Status of Claude Code in this session
     pub claude_code_status: ClaudeCodeStatus,
+    /// Pane title of the Claude Code pane (or first pane)
+    pub pane_title: String,
 }
 
 impl Session {

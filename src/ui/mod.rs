@@ -20,9 +20,9 @@ use crate::session::ClaudeCodeStatus;
 pub fn render(frame: &mut Frame, app: &mut App) {
     let area = frame.area();
 
-    // Calculate preview height (roughly 50% of available space, min 8, max 20 lines)
+    // Calculate preview height (roughly 50% of available space, min 5, max 30 lines)
     let available_height = area.height.saturating_sub(4);
-    let preview_height = (available_height * 50 / 100).clamp(8, 20);
+    let preview_height = (available_height * 50 / 100).clamp(5, 30);
 
     // Main layout: header, session list, preview, status bar, footer
     let layout = Layout::vertical([
@@ -176,7 +176,7 @@ fn render_session_list(frame: &mut Frame, app: &mut App, area: Rect) {
             Style::default()
         };
 
-        let line_spans = vec![
+        let mut line_spans = vec![
             Span::raw(format!(" {} ", marker)),
             Span::styled(
                 format!("{:<width$}", session.name, width = max_name_len),
@@ -192,6 +192,20 @@ fn render_session_list(frame: &mut Frame, app: &mut App, area: Rect) {
             Span::raw("  "),
             Span::styled(session.display_path(), Style::default().fg(path_color)),
         ];
+
+        // Show pane title if available
+        if !session.pane_title.is_empty() {
+            let title_color = if is_selected {
+                Color::Cyan
+            } else {
+                Color::DarkGray
+            };
+            line_spans.push(Span::raw("  "));
+            line_spans.push(Span::styled(
+                &session.pane_title,
+                Style::default().fg(title_color),
+            ));
+        }
 
         let line = Line::from(line_spans);
 

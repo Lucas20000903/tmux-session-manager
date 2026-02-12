@@ -45,7 +45,7 @@ impl Tmux {
                 let panes = Self::list_panes(&name).unwrap_or_default();
 
                 // Find Claude Code pane and detect status
-                let (claude_code_pane, claude_code_status, working_directory) =
+                let (claude_code_pane, claude_code_status, working_directory, pane_title) =
                     Self::find_claude_code_pane(&name, &panes);
 
                 // Use the Claude Code pane's path, or fall back to first pane's path
@@ -65,6 +65,7 @@ impl Tmux {
                     panes,
                     claude_code_pane,
                     claude_code_status,
+                    pane_title,
                 });
             }
         }
@@ -87,7 +88,7 @@ impl Tmux {
                 "-t",
                 session,
                 "-F",
-                "#{pane_id}\t#{pane_current_command}\t#{pane_current_path}\t#{pane_pid}",
+                "#{pane_id}\t#{pane_current_command}\t#{pane_current_path}\t#{pane_pid}\t#{pane_title}",
             ])
             .output()
             .context("Failed to execute tmux list-panes")?;
@@ -101,12 +102,13 @@ impl Tmux {
 
         for line in stdout.lines() {
             let parts: Vec<&str> = line.split('\t').collect();
-            if parts.len() >= 4 {
+            if parts.len() >= 5 {
                 panes.push(Pane {
                     id: parts[0].to_string(),
                     current_command: parts[1].to_string(),
                     current_path: PathBuf::from(parts[2]),
                     pid: parts[3].parse().unwrap_or(0),
+                    title: parts[4].to_string(),
                 });
             }
         }
@@ -139,6 +141,7 @@ impl Tmux {
     }
 
     /// Find the pane running Claude Code and detect its status
+    /// Returns (pane_id, status, working_directory, pane_title)
     fn find_claude_code_pane(
         session_name: &str,
         panes: &[Pane],
@@ -146,6 +149,7 @@ impl Tmux {
         Option<String>,
         crate::session::ClaudeCodeStatus,
         Option<PathBuf>,
+        String,
     ) {
         use crate::session::ClaudeCodeStatus;
 
@@ -160,6 +164,7 @@ impl Tmux {
                     Some(pane.id.clone()),
                     status,
                     Some(pane.current_path.clone()),
+                    pane.title.clone(),
                 );
             }
         }
@@ -175,11 +180,13 @@ impl Tmux {
                     Some(pane.id.clone()),
                     status,
                     Some(pane.current_path.clone()),
+                    pane.title.clone(),
                 );
             }
         }
 
-        (None, ClaudeCodeStatus::Unknown, None)
+        let title = panes.first().map(|p| p.title.clone()).unwrap_or_default();
+        (None, ClaudeCodeStatus::Unknown, None, title)
     }
 
     /// Capture the last N lines of a pane's content

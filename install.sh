@@ -23,7 +23,7 @@ fi
 
 # Add tmux keybinding
 TMUX_CONF="${HOME}/.tmux.conf"
-KEYBINDING='bind s display-popup -E -w 80% -h 80% "tsm"'
+KEYBINDING='bind s display-popup -E -w 80% -h 50 -b double "tsm"'
 
 if [ -f "${TMUX_CONF}" ] && grep -qF 'display-popup' "${TMUX_CONF}" && grep -qF 'tsm' "${TMUX_CONF}"; then
     echo "==> tmux keybinding already configured"

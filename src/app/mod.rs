@@ -89,6 +89,28 @@ impl App {
         });
     }
 
+    /// Called every tick to refresh sessions and preview
+    pub fn tick(&mut self) {
+        if let Ok(sessions) = Tmux::list_sessions() {
+            // Preserve selected session by name
+            let selected_name = self.selected_session().map(|s| s.name.clone());
+            self.sessions = sessions;
+
+            // Restore selection by name
+            if let Some(ref name) = selected_name {
+                let filtered = self.filtered_sessions();
+                if let Some(pos) = filtered.iter().position(|s| &s.name == name) {
+                    self.selected = pos;
+                }
+            }
+
+            if self.selected >= self.filtered_sessions().len() && !self.sessions.is_empty() {
+                self.selected = self.filtered_sessions().len().saturating_sub(1);
+            }
+        }
+        self.update_preview();
+    }
+
     /// Clear any displayed messages
     pub fn clear_messages(&mut self) {
         self.error = None;
@@ -344,6 +366,17 @@ impl App {
     // Dialog flows: New Session
     // =========================================================================
 
+    /// Generate a default session name like claude_A1B2C3D4
+    fn generate_session_name() -> String {
+        use std::time::{SystemTime, UNIX_EPOCH};
+        let seed = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or(0);
+        // Use nanoseconds as a simple unique source, take 8 hex chars
+        format!("claude_{:08X}", (seed & 0xFFFFFFFF) as u32)
+    }
+
     /// Start the new session flow
     pub fn start_new_session(&mut self) {
         self.clear_messages();
@@ -354,7 +387,7 @@ impl App {
         let completion = crate::completion::complete_path(&default_path);
 
         self.mode = Mode::NewSession {
-            name: String::new(),
+            name: Self::generate_session_name(),
             path: default_path,
             field: NewSessionField::Name,
             path_suggestions: completion.suggestions,

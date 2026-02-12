@@ -31,6 +31,7 @@ pub fn render_confirm_action(frame: &mut Frame, app: &App) {
             let block = Block::default()
                 .title(" Confirm ")
                 .borders(Borders::ALL)
+
                 .border_style(Style::default().fg(Color::Red));
 
             let mut lines = vec![Line::from(format!(

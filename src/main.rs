@@ -41,6 +41,9 @@ fn run(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<()> {
     let mut app = App::new()?;
 
     loop {
+        // Refresh sessions and preview every tick
+        app.tick();
+
         // Draw the UI
         terminal.draw(|frame| ui::render(frame, &mut app))?;
 
