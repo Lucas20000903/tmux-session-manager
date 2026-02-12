@@ -1,86 +1,69 @@
 # VHS Demo Tape for tsm (tmux session manager)
-# Run: vhs demo.tape
-# Install VHS: brew install vhs
+# Usage:
+#   ./record-demo.sh    # setup + record + cleanup
+#   vhs demo.tape       # record only (requires tmux sessions)
 
 Output demo.gif
 
 Set Shell "bash"
 Set FontSize 14
 Set Width 1200
-Set Height 800
+Set Height 700
 Set Padding 20
 Set Theme "Catppuccin Mocha"
-
-# Ensure we have some demo sessions
-Hide
-Type "tmux new-session -d -s demo-project -c ~/workspace"
-Enter
-Type "tmux new-session -d -s api-server -c ~/workspace"
-Enter
-Type "tmux new-session -d -s frontend -c ~/workspace"
-Enter
-Show
+Set TypingSpeed 80ms
 
 # Launch tsm
 Type "tsm"
 Enter
-Sleep 1s
+Sleep 1.5s
 
 # Navigate session list
-Sleep 500ms
 Type "j"
-Sleep 500ms
+Sleep 400ms
 Type "j"
-Sleep 500ms
+Sleep 400ms
+Type "j"
+Sleep 400ms
 Type "k"
-Sleep 500ms
-
-# Switch session with Space (peek)
-Type " "
-Sleep 1s
+Sleep 600ms
 
 # Open action menu
 Type "l"
-Sleep 800ms
+Sleep 1s
 
 # Go back
 Type "h"
-Sleep 500ms
+Sleep 600ms
 
 # New session dialog
 Type "n"
-Sleep 1s
+Sleep 1.2s
 Escape
-Sleep 500ms
+Sleep 600ms
 
 # Filter sessions
 Type "/"
 Sleep 300ms
-Type "demo"
-Sleep 500ms
+Type "web"
+Sleep 800ms
 Enter
 Sleep 800ms
 
-# Clear filter with Ctrl+C
+# Clear filter
 Ctrl+C
-Sleep 500ms
+Sleep 600ms
 
 # Apply tmux settings
 Type "S"
-Sleep 1s
+Sleep 1.2s
 
 # Show help
 Type "?"
-Sleep 1.5s
+Sleep 2s
 Type "q"
-Sleep 500ms
+Sleep 600ms
 
 # Quit
 Type "q"
 Sleep 500ms
-
-# Cleanup demo sessions
-Hide
-Type "tmux kill-session -t demo-project 2>/dev/null; tmux kill-session -t api-server 2>/dev/null; tmux kill-session -t frontend 2>/dev/null"
-Enter
-Show
