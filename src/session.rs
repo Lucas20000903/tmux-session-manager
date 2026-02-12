@@ -18,10 +18,10 @@ impl ClaudeCodeStatus {
     /// Returns the display symbol for this status
     pub fn symbol(&self) -> &'static str {
         match self {
-            ClaudeCodeStatus::Idle => "○",
-            ClaudeCodeStatus::Working => "●",
-            ClaudeCodeStatus::WaitingInput => "◐",
-            ClaudeCodeStatus::Unknown => "?",
+            ClaudeCodeStatus::Idle => "\u{f28c}",
+            ClaudeCodeStatus::Working => "\u{f070e}",
+            ClaudeCodeStatus::WaitingInput => "\u{f0a6}",
+            ClaudeCodeStatus::Unknown => "\u{f29c}",
         }
     }
 

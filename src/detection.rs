@@ -29,6 +29,7 @@ pub fn detect_status(content: &str) -> ClaudeCodeStatus {
     if content.contains("Enter to select")
         || content.contains("↑/↓ to navigate")
         || content.contains("Esc to cancel")
+        || content.contains("to edit")
     {
         return ClaudeCodeStatus::WaitingInput;
     }
@@ -108,6 +109,12 @@ mod tests {
     fn test_working_with_ansi() {
         let content = "\x1b[38;2;153;153;153mesc to interrupt\x1b[39m\n\x1b[38;2;177;185;249m─────\x1b[39m\n\x1b[38;2;177;185;249m❯\x1b[39m hello";
         assert_eq!(detect_status(content), ClaudeCodeStatus::Working);
+    }
+
+    #[test]
+    fn test_waiting_input_edit_plan() {
+        let content = "ctrl+e to edit plan.md";
+        assert_eq!(detect_status(content), ClaudeCodeStatus::WaitingInput);
     }
 
     #[test]

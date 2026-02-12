@@ -4,21 +4,22 @@ use ratatui::{
     layout::Rect,
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, Clear, Paragraph, Wrap},
+    widgets::{Block, Borders, Clear, Padding, Paragraph, Wrap},
     Frame,
 };
 
 pub fn render_help(frame: &mut Frame) {
-    let area = centered_rect(60, 21, frame.area());
+    let area = centered_rect(64, 25, frame.area());
 
     let block = Block::default()
-        .title(" Help ")
+        .title(" \u{f059} Help ")
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(Color::Cyan));
+        .border_style(Style::default().fg(Color::Cyan))
+        .padding(Padding::new(2, 2, 1, 1));
 
     let help_text = vec![
         Line::from(Span::styled(
-            "Navigation",
+            "\u{f14e} Navigation",
             Style::default().add_modifier(Modifier::BOLD),
         )),
         Line::raw("  j / ↓       Move down"),
@@ -27,7 +28,7 @@ pub fn render_help(frame: &mut Frame) {
         Line::raw("  Enter       Switch to session"),
         Line::raw(""),
         Line::from(Span::styled(
-            "Actions",
+            "\u{f0e7} Actions",
             Style::default().add_modifier(Modifier::BOLD),
         )),
         Line::raw("  n           New session"),
@@ -37,14 +38,14 @@ pub fn render_help(frame: &mut Frame) {
         Line::raw("  R           Refresh list"),
         Line::raw(""),
         Line::from(Span::styled(
-            "Action Menu",
+            "\u{f03a} Action Menu",
             Style::default().add_modifier(Modifier::BOLD),
         )),
         Line::raw("  h / ←       Go back"),
         Line::raw("  Enter       Execute action"),
         Line::raw(""),
         Line::from(Span::styled(
-            "Other",
+            "\u{f013} Other",
             Style::default().add_modifier(Modifier::BOLD),
         )),
         Line::raw("  ?           Show this help"),

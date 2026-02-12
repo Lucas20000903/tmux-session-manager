@@ -44,9 +44,9 @@ impl SessionAction {
     /// Returns the display label for this action
     pub fn label(&self) -> &'static str {
         match self {
-            Self::SwitchTo => "Switch to session",
-            Self::Rename => "Rename session",
-            Self::Kill => "Kill session",
+            Self::SwitchTo => "\u{f064} Switch to session",
+            Self::Rename => "\u{f040} Rename session",
+            Self::Kill => "\u{f00d} Kill session",
         }
     }
 

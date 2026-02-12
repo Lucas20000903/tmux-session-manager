@@ -124,7 +124,7 @@ impl App {
     pub fn refresh(&mut self) {
         self.clear_messages();
         if self.refresh_sessions() {
-            self.message = Some("Refreshed".to_string());
+            self.message = Some("\u{f00c} Refreshed".to_string());
         }
     }
 
@@ -140,7 +140,7 @@ impl App {
                 true
             }
             Err(e) => {
-                self.error = Some(format!("Failed to refresh: {}", e));
+                self.error = Some(format!("\u{f00d} Failed to refresh: {}", e));
                 false
             }
         }
@@ -232,7 +232,7 @@ impl App {
                     self.should_quit = true;
                 }
                 Err(e) => {
-                    self.error = Some(format!("Failed to switch: {}", e));
+                    self.error = Some(format!("\u{f00d} Failed to switch: {}", e));
                 }
             }
         }
@@ -245,10 +245,10 @@ impl App {
             let name = session.name.clone();
             match Tmux::switch_to_session(&name) {
                 Ok(_) => {
-                    self.message = Some(format!("Switched to '{}'", name));
+                    self.message = Some(format!("\u{f00c} Switched to '{}'", name));
                 }
                 Err(e) => {
-                    self.error = Some(format!("Failed to switch: {}", e));
+                    self.error = Some(format!("\u{f00d} Failed to switch: {}", e));
                 }
             }
         }
@@ -347,7 +347,7 @@ impl App {
             SessionAction::SwitchTo => {
                 match Tmux::switch_to_session(&session_name) {
                     Ok(_) => self.should_quit = true,
-                    Err(e) => self.error = Some(format!("Failed to switch: {}", e)),
+                    Err(e) => self.error = Some(format!("\u{f00d} Failed to switch: {}", e)),
                 }
                 self.mode = Mode::Normal;
             }
@@ -361,9 +361,9 @@ impl App {
                 match Tmux::kill_session(&session_name) {
                     Ok(_) => {
                         self.refresh_sessions();
-                        self.message = Some(format!("Killed session '{}'", session_name));
+                        self.message = Some(format!("\u{f00c} Killed session '{}'", session_name));
                     }
-                    Err(e) => self.error = Some(format!("Failed to kill: {}", e)),
+                    Err(e) => self.error = Some(format!("\u{f00d} Failed to kill: {}", e)),
                 }
                 self.mode = Mode::Normal;
             }
@@ -403,10 +403,10 @@ impl App {
             match Tmux::rename_session(&old, &new) {
                 Ok(_) => {
                     self.refresh_sessions();
-                    self.message = Some(format!("Renamed '{}' to '{}'", old, new));
+                    self.message = Some(format!("\u{f00c} Renamed '{}' to '{}'", old, new));
                 }
                 Err(e) => {
-                    self.error = Some(format!("Failed to rename: {}", e));
+                    self.error = Some(format!("\u{f00d} Failed to rename: {}", e));
                 }
             }
         }
@@ -462,7 +462,7 @@ impl App {
         } = self.mode
         {
             if name.is_empty() {
-                self.error = Some("Session name cannot be empty".to_string());
+                self.error = Some("\u{f00d} Session name cannot be empty".to_string());
                 self.mode = Mode::Normal;
                 return;
             }
@@ -473,10 +473,10 @@ impl App {
             match Tmux::new_session(&session_name, &session_path, start_claude) {
                 Ok(_) => {
                     self.refresh_sessions();
-                    self.message = Some(format!("Created session '{}'", session_name));
+                    self.message = Some(format!("\u{f00c} Created session '{}'", session_name));
                 }
                 Err(e) => {
-                    self.error = Some(format!("Failed to create session: {}", e));
+                    self.error = Some(format!("\u{f00d} Failed to create session: {}", e));
                 }
             }
         }
