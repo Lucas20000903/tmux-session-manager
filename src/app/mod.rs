@@ -60,7 +60,7 @@ impl App {
             selected: 0,
             mode: Mode::Normal,
             should_quit: false,
-            current_session,
+            current_session: current_session.clone(),
             filter: String::new(),
             error: None,
             message: None,
@@ -71,6 +71,14 @@ impl App {
             scroll_state: ScrollState::new(),
             show_preview: true,
         };
+
+        // Move cursor to current session if available
+        if let Some(ref name) = current_session {
+            let filtered = app.filtered_sessions();
+            if let Some(pos) = filtered.iter().position(|s| &s.name == name) {
+                app.selected = pos;
+            }
+        }
 
         app.update_preview();
         Ok(app)
